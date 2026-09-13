@@ -26,6 +26,7 @@ describe('clarityVars', () => {
     expect(vars['--ari-wallpaper-blur']).toBe('28px')
     // The plate alone keeps text legible here, so no halo behind it.
     expect(vars['--ari-wallpaper-halo']).toBe('0%')
+    expect(vars['--ari-wallpaper-halo-offset']).toBe('0px')
     expect(vars['--ari-wallpaper-halo-blur']).toBe('0px')
   })
 

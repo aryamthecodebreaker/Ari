@@ -89,18 +89,23 @@
      schemes gain contrast rather than one of them losing it. Fully transparent
      at the default clarity, so the frosted look carries no shadow at all.
 
-     Three stacked layers, not one: a single shadow disappears against a busy,
-     bright photo. Tight-and-opaque reads as an outline that holds the glyph
-     edges, and the wide one darkens the picture immediately around the text. */
+     An outline, not a glow. Four hard one-pixel offsets trace the glyph and
+     keep its edge sharp; a blurred shadow wide enough to be visible over a
+     busy photo spreads into the counters and letter spacing instead, and the
+     text reads soft. The single small blur below only pads that contour so it
+     does not look stencilled. */
   --ari-wallpaper-halo-color: color-mix(
     in oklab,
     var(--ari-bg) var(--ari-wallpaper-halo, 0%),
     transparent
   );
+  --ari-wallpaper-halo-inset: calc(var(--ari-wallpaper-halo-offset, 0px) * -1);
   text-shadow:
-    0 0 var(--ari-wallpaper-halo-blur, 0px) var(--ari-wallpaper-halo-color),
-    0 1px calc(var(--ari-wallpaper-halo-blur, 0px) * 1.5) var(--ari-wallpaper-halo-color),
-    0 0 calc(var(--ari-wallpaper-halo-blur, 0px) * 3) var(--ari-wallpaper-halo-color);
+    var(--ari-wallpaper-halo-offset, 0px) 0 0 var(--ari-wallpaper-halo-color),
+    var(--ari-wallpaper-halo-inset) 0 0 var(--ari-wallpaper-halo-color),
+    0 var(--ari-wallpaper-halo-offset, 0px) 0 var(--ari-wallpaper-halo-color),
+    0 var(--ari-wallpaper-halo-inset) 0 var(--ari-wallpaper-halo-color),
+    0 0 var(--ari-wallpaper-halo-blur, 0px) var(--ari-wallpaper-halo-color);
 }
 
 /* Nothing inside the plate re-tints it: structural chrome and pane fills go
@@ -125,5 +130,9 @@
   [data-ari-wallpaper] .ari-glass-pane {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    /* The halo pays for a thin plate. This mode restores an almost opaque one,
+       so a saved clarity would otherwise leave every text node wearing an
+       outline it no longer needs — noise in the mode asking for less of it. */
+    text-shadow: none;
   }
 }

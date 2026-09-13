@@ -24,9 +24,15 @@ const CLEAR = { tint: 6, overlay: 64, input: 74, blur: 0 }
  * own background color fades in behind the text. Background, not a fixed
  * black: that darkens text in light themes and lightens it in dark ones, which
  * is the direction legibility actually needs in each.
+ *
+ * The halo is mostly an *outline*, not a glow. A wide soft shadow spreads out
+ * from the glyph and the edge goes mushy exactly where it needs to be sharp;
+ * a one-pixel hard offset on each side reads as a crisp contour instead. The
+ * small blur that remains only pads the contour so it does not look stencilled.
  */
 const HALO = { opaque: 0, clear: 100 }
-const HALO_BLUR = { opaque: 0, clear: 6 }
+const HALO_OFFSET = { opaque: 0, clear: 1 }
+const HALO_BLUR = { opaque: 0, clear: 3 }
 
 /** CSS custom properties wallpaper.css reads, for a clarity in [0, 1]. */
 export function clarityVars(clarity: number): Record<string, string> {
@@ -38,6 +44,7 @@ export function clarityVars(clarity: number): Record<string, string> {
     '--ari-wallpaper-tint-input': `${String(Math.round(between(OPAQUE.input, CLEAR.input)))}%`,
     '--ari-wallpaper-blur': `${String(Math.round(between(OPAQUE.blur, CLEAR.blur)))}px`,
     '--ari-wallpaper-halo': `${String(Math.round(between(HALO.opaque, HALO.clear)))}%`,
+    '--ari-wallpaper-halo-offset': `${String(Math.round(between(HALO_OFFSET.opaque, HALO_OFFSET.clear)))}px`,
     '--ari-wallpaper-halo-blur': `${String(Math.round(between(HALO_BLUR.opaque, HALO_BLUR.clear)))}px`,
   }
 }

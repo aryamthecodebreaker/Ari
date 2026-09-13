@@ -31,11 +31,22 @@ describe('wallpaper.css', () => {
     expect(css).toMatch(/text-shadow:[^;]*var\(--ari-wallpaper-halo-blur, 0px\)/)
   })
 
-  it('stacks the halo so it survives a bright, busy picture', () => {
-    // One soft shadow vanishes against a photo; the outline needs layering.
+  it('traces the glyph with hard offsets rather than one soft glow', () => {
+    // A blur wide enough to read over a photo spreads into the counters and
+    // the text goes soft; four hard offsets keep the contour sharp.
     const start = css.indexOf('text-shadow:')
     const shadow = css.slice(start, css.indexOf(';', start))
-    expect(shadow.match(/--ari-wallpaper-halo-color/g)).toHaveLength(3)
+    expect(shadow.match(/--ari-wallpaper-halo-color/g)).toHaveLength(5)
+    // Right, left, down, up: each a zero-blur offset.
+    expect(shadow.match(/ 0 var\(--ari-wallpaper-halo-color\)/g)).toHaveLength(4)
+    expect(css).toMatch(/--ari-wallpaper-halo-inset:[^;]*\* -1\)/)
+  })
+
+  it('drops the halo entirely under reduced transparency', () => {
+    // That mode restores an almost opaque plate, so the outline it compensates
+    // for is noise in the mode asking for less of it.
+    const media = css.slice(css.indexOf('@media (prefers-reduced-transparency: reduce)'))
+    expect(media).toContain('text-shadow: none')
   })
 
   it('neutralizes nested chrome and pane fills so no surface double-tints', () => {
