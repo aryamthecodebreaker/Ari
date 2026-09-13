@@ -14,6 +14,9 @@ function amount(value: string): number {
 }
 
 describe('clarityVars', () => {
+  /** The plate properties, which thin out as clarity rises. */
+  const PLATE_VARS = CLARITY_VAR_NAMES.filter((name) => !name.includes('halo'))
+
   it('leaves the original frosted look at clarity 0', () => {
     const vars = clarityVars(0)
     expect(vars['--ari-wallpaper-tint']).toBe('72%')
@@ -21,16 +24,34 @@ describe('clarityVars', () => {
     expect(vars['--ari-wallpaper-tint-input']).toBe('85%')
     // The same values wallpaper.css falls back to, so 0 is a no-op.
     expect(vars['--ari-wallpaper-blur']).toBe('28px')
+    // The plate alone keeps text legible here, so no halo behind it.
+    expect(vars['--ari-wallpaper-halo']).toBe('0%')
+    expect(vars['--ari-wallpaper-halo-blur']).toBe('0px')
   })
 
   it('thins tint and blur as clarity rises', () => {
     const dim = clarityVars(0)
     const mid = clarityVars(0.5)
     const clear = clarityVars(1)
-    for (const name of CLARITY_VAR_NAMES) {
+    for (const name of PLATE_VARS) {
       expect(amount(mid[name] ?? '')).toBeLessThan(amount(dim[name] ?? ''))
       expect(amount(clear[name] ?? '')).toBeLessThan(amount(mid[name] ?? ''))
     }
+  })
+
+  it('strengthens the text halo as the plate thins, to keep text readable', () => {
+    // The halo runs opposite the plate: whatever legibility the tint and blur
+    // stop providing, it has to take over.
+    const dim = clarityVars(0)
+    const mid = clarityVars(0.5)
+    const clear = clarityVars(1)
+    expect(amount(mid['--ari-wallpaper-halo'] ?? '')).toBeGreaterThan(
+      amount(dim['--ari-wallpaper-halo'] ?? ''),
+    )
+    expect(amount(clear['--ari-wallpaper-halo'] ?? '')).toBeGreaterThan(
+      amount(mid['--ari-wallpaper-halo'] ?? ''),
+    )
+    expect(amount(clear['--ari-wallpaper-halo-blur'] ?? '')).toBeGreaterThan(0)
   })
 
   it('shows the picture essentially bare at the clearest setting', () => {

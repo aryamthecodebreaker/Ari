@@ -84,6 +84,13 @@
   background: var(--ari-glass-scrim);
   -webkit-backdrop-filter: blur(var(--ari-wallpaper-blur, 28px)) saturate(1.35);
   backdrop-filter: blur(var(--ari-wallpaper-blur, 28px)) saturate(1.35);
+  /* Legibility as the plate thins: a halo in the theme's own background color,
+     which is dark behind light text and light behind dark text, so both
+     schemes gain contrast rather than one of them losing it. Fully transparent
+     at the default clarity, so the frosted look carries no shadow at all. */
+  text-shadow:
+    0 0 var(--ari-wallpaper-halo-blur, 0)
+    color-mix(in oklab, var(--ari-bg) var(--ari-wallpaper-halo, 0%), transparent);
 }
 
 /* Nothing inside the plate re-tints it: structural chrome and pane fills go

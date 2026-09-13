@@ -15,6 +15,16 @@ const OPAQUE = { tint: 72, overlay: 82, input: 85, blur: 28 }
  */
 const CLEAR = { tint: 6, overlay: 30, input: 38, blur: 0 }
 
+/**
+ * Text halo at each end. The plate is what keeps text legible at clarity 0, so
+ * there is nothing to add there; as the plate thins out, a halo in the theme's
+ * own background color fades in behind the text. Background, not a fixed
+ * black: that darkens text in light themes and lightens it in dark ones, which
+ * is the direction legibility actually needs in each.
+ */
+const HALO = { opaque: 0, clear: 88 }
+const HALO_BLUR = { opaque: 0, clear: 4 }
+
 /** CSS custom properties wallpaper.css reads, for a clarity in [0, 1]. */
 export function clarityVars(clarity: number): Record<string, string> {
   const t = Math.min(1, Math.max(0, Number.isFinite(clarity) ? clarity : 0))
@@ -24,6 +34,8 @@ export function clarityVars(clarity: number): Record<string, string> {
     '--ari-wallpaper-tint-overlay': `${String(Math.round(between(OPAQUE.overlay, CLEAR.overlay)))}%`,
     '--ari-wallpaper-tint-input': `${String(Math.round(between(OPAQUE.input, CLEAR.input)))}%`,
     '--ari-wallpaper-blur': `${String(Math.round(between(OPAQUE.blur, CLEAR.blur)))}px`,
+    '--ari-wallpaper-halo': `${String(Math.round(between(HALO.opaque, HALO.clear)))}%`,
+    '--ari-wallpaper-halo-blur': `${String(Math.round(between(HALO_BLUR.opaque, HALO_BLUR.clear)))}px`,
   }
 }
 

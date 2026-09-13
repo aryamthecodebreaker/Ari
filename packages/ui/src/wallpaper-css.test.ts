@@ -22,6 +22,15 @@ describe('wallpaper.css', () => {
     )
   })
 
+  it('hangs the text halo off the clarity variables, inert by default', () => {
+    // 0% of the background color is transparent, so the frosted default paints
+    // no shadow at all; the app raises it as it thins the plate.
+    expect(css).toMatch(/text-shadow:[^;]*var\(--ari-wallpaper-halo-blur, 0\)/)
+    expect(css).toMatch(/text-shadow:[^;]*var\(--ari-wallpaper-halo, 0%\)/)
+    // Theme background, not a fixed dark: light themes need the opposite.
+    expect(css).toMatch(/text-shadow:[^;]*var\(--ari-bg\)/)
+  })
+
   it('neutralizes nested chrome and pane fills so no surface double-tints', () => {
     expect(css).toContain('[data-ari-wallpaper] .ari-glass-pane .ari-glass,')
     expect(css).toContain('[data-ari-wallpaper] .ari-glass-pane .bg-bg {')
