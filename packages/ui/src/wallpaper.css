@@ -87,10 +87,20 @@
   /* Legibility as the plate thins: a halo in the theme's own background color,
      which is dark behind light text and light behind dark text, so both
      schemes gain contrast rather than one of them losing it. Fully transparent
-     at the default clarity, so the frosted look carries no shadow at all. */
+     at the default clarity, so the frosted look carries no shadow at all.
+
+     Three stacked layers, not one: a single shadow disappears against a busy,
+     bright photo. Tight-and-opaque reads as an outline that holds the glyph
+     edges, and the wide one darkens the picture immediately around the text. */
+  --ari-wallpaper-halo-color: color-mix(
+    in oklab,
+    var(--ari-bg) var(--ari-wallpaper-halo, 0%),
+    transparent
+  );
   text-shadow:
-    0 0 var(--ari-wallpaper-halo-blur, 0)
-    color-mix(in oklab, var(--ari-bg) var(--ari-wallpaper-halo, 0%), transparent);
+    0 0 var(--ari-wallpaper-halo-blur, 0px) var(--ari-wallpaper-halo-color),
+    0 1px calc(var(--ari-wallpaper-halo-blur, 0px) * 1.5) var(--ari-wallpaper-halo-color),
+    0 0 calc(var(--ari-wallpaper-halo-blur, 0px) * 3) var(--ari-wallpaper-halo-color);
 }
 
 /* Nothing inside the plate re-tints it: structural chrome and pane fills go

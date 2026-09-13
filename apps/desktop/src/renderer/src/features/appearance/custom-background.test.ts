@@ -54,6 +54,15 @@ describe('clarityVars', () => {
     expect(amount(clear['--ari-wallpaper-halo-blur'] ?? '')).toBeGreaterThan(0)
   })
 
+  it('keeps inputs and overlays findable while the pane goes clear', () => {
+    const clear = clarityVars(1)
+    const pane = amount(clear['--ari-wallpaper-tint'] ?? '')
+    // The composer is a thing you aim at: it has to stay a plate on top of the
+    // picture, not dissolve into it along with the window behind it.
+    expect(amount(clear['--ari-wallpaper-tint-input'] ?? '')).toBeGreaterThan(pane + 50)
+    expect(amount(clear['--ari-wallpaper-tint-overlay'] ?? '')).toBeGreaterThan(pane + 50)
+  })
+
   it('shows the picture essentially bare at the clearest setting', () => {
     const clear = clarityVars(1)
     // No blur at all up here, and only a trace of tint — enough that panes

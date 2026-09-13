@@ -25,10 +25,17 @@ describe('wallpaper.css', () => {
   it('hangs the text halo off the clarity variables, inert by default', () => {
     // 0% of the background color is transparent, so the frosted default paints
     // no shadow at all; the app raises it as it thins the plate.
-    expect(css).toMatch(/text-shadow:[^;]*var\(--ari-wallpaper-halo-blur, 0\)/)
-    expect(css).toMatch(/text-shadow:[^;]*var\(--ari-wallpaper-halo, 0%\)/)
+    expect(css).toMatch(/--ari-wallpaper-halo-color:[^;]*var\(--ari-wallpaper-halo, 0%\)/)
     // Theme background, not a fixed dark: light themes need the opposite.
-    expect(css).toMatch(/text-shadow:[^;]*var\(--ari-bg\)/)
+    expect(css).toMatch(/--ari-wallpaper-halo-color:[^;]*var\(--ari-bg\)/)
+    expect(css).toMatch(/text-shadow:[^;]*var\(--ari-wallpaper-halo-blur, 0px\)/)
+  })
+
+  it('stacks the halo so it survives a bright, busy picture', () => {
+    // One soft shadow vanishes against a photo; the outline needs layering.
+    const start = css.indexOf('text-shadow:')
+    const shadow = css.slice(start, css.indexOf(';', start))
+    expect(shadow.match(/--ari-wallpaper-halo-color/g)).toHaveLength(3)
   })
 
   it('neutralizes nested chrome and pane fills so no surface double-tints', () => {

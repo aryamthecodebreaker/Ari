@@ -7,13 +7,16 @@
 const OPAQUE = { tint: 72, overlay: 82, input: 85, blur: 28 }
 
 /**
- * The clear end: the picture essentially as it is, with no blur and only a
- * trace of tint left to keep panes distinguishable from each other. Text over
- * a busy photo is genuinely harder to read up here, which is the point of the
- * setting — the user decides how far to push it, and the range below the top
- * end stays comfortable.
+ * The clear end. The window plate goes to a trace of tint and no blur at all,
+ * so the picture reads as itself.
+ *
+ * Inputs and floating surfaces deliberately do not follow it down. The
+ * composer, popovers and menus are things you aim at: they have to stay
+ * findable against any picture, and they keep their own blur from glass.css,
+ * so holding their tint high reads as a dark glossy plate resting on the
+ * scene rather than a pane that dissolved into it.
  */
-const CLEAR = { tint: 6, overlay: 30, input: 38, blur: 0 }
+const CLEAR = { tint: 6, overlay: 64, input: 74, blur: 0 }
 
 /**
  * Text halo at each end. The plate is what keeps text legible at clarity 0, so
@@ -22,8 +25,8 @@ const CLEAR = { tint: 6, overlay: 30, input: 38, blur: 0 }
  * black: that darkens text in light themes and lightens it in dark ones, which
  * is the direction legibility actually needs in each.
  */
-const HALO = { opaque: 0, clear: 88 }
-const HALO_BLUR = { opaque: 0, clear: 4 }
+const HALO = { opaque: 0, clear: 100 }
+const HALO_BLUR = { opaque: 0, clear: 6 }
 
 /** CSS custom properties wallpaper.css reads, for a clarity in [0, 1]. */
 export function clarityVars(clarity: number): Record<string, string> {
