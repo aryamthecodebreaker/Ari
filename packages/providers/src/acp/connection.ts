@@ -9,6 +9,7 @@ import {
   terminalLoginsFrom,
 } from './protocol'
 import { isInteractiveClientMethod } from './client-requests'
+import type { AcpMcpServer } from './mcp-servers'
 import type {
   AcpInitializeResult,
   AcpNewSessionResult,
@@ -67,6 +68,11 @@ export interface AcpConnectOptions {
   /** Process factory seam for tests; defaults to the real Windows-safe spawner. */
   spawn?: (launch: AcpLaunch, cwd: string) => AcpChildProcess
   runtimeEnv?: Record<string, string | undefined>
+  /**
+   * MCP servers offered to the agent on every session call. Ari names tools
+   * the user already has; the agent spawns them itself.
+   */
+  mcpServers?: AcpMcpServer[]
 }
 
 export class AcpConnectionError extends Error {
@@ -149,6 +155,9 @@ export class AcpConnection {
 
   /** Hook for `session/update` notifications; assigned by the driver. */
   onSessionUpdate: ((notification: AcpSessionNotification) => void) | null = null
+
+  /** Tool servers every session call offers the agent; empty unless the host set any. */
+  #mcpServers: AcpMcpServer[] = []
 
   /**
    * Hook answering server `session/request_permission` calls. Returning a
@@ -241,6 +250,7 @@ export class AcpConnection {
     })
 
     const connection = new AcpConnection(child, launch, options.onRequestPermission ?? null, closeWaiter)
+    connection.#mcpServers = options.mcpServers ?? []
 
     child.stderr.on('data', (chunk: string) => {
       if (connection.#stderrTail.length > 6) connection.#stderrTail.shift()
@@ -527,7 +537,7 @@ export class AcpConnection {
 
   /** Creates a session bound to `cwd`; throws descriptive errors on auth walls. */
   async newSession(cwd: string): Promise<AcpNewSessionResult> {
-    const result = await this.#request('session/new', { cwd, mcpServers: [] }, 30_000)
+    const result = await this.#request('session/new', { cwd, mcpServers: this.#mcpServers }, 30_000)
     const created = (result ?? {}) as AcpNewSessionResult
     if (typeof created.sessionId !== 'string') {
       throw new AcpConnectionError(`${this.launch.label} returned no sessionId`)
@@ -546,7 +556,11 @@ export class AcpConnection {
    * only after this promise resolves.
    */
   async loadSession(sessionId: string, cwd: string): Promise<AcpNewSessionResult> {
-    const result = await this.#request('session/load', { sessionId, cwd, mcpServers: [] }, 60_000)
+    const result = await this.#request(
+      'session/load',
+      { sessionId, cwd, mcpServers: this.#mcpServers },
+      60_000,
+    )
     return { ...((result ?? {}) as AcpNewSessionResult), sessionId }
   }
 
@@ -555,7 +569,11 @@ export class AcpConnection {
    * {@link loadSession} when the agent advertised `sessionCapabilities.resume`.
    */
   async resumeSession(sessionId: string, cwd: string): Promise<AcpNewSessionResult> {
-    const result = await this.#request('session/resume', { sessionId, cwd, mcpServers: [] }, 60_000)
+    const result = await this.#request(
+      'session/resume',
+      { sessionId, cwd, mcpServers: this.#mcpServers },
+      60_000,
+    )
     return { ...((result ?? {}) as AcpNewSessionResult), sessionId }
   }
 

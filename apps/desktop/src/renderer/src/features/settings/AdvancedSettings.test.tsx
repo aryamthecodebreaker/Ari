@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockInstance } from 'vitest'
 import type { Settings } from '@ari/contracts/settings'
 import { delegationSettingsSchema } from '@ari/contracts/agent-control'
-import { AdvancedSettings } from './AdvancedSettings'
+import { AdvancedSettings, parseSettingsBundle } from './AdvancedSettings'
 
 const mocks = vi.hoisted(() => ({
   update: vi.fn(),
@@ -36,6 +36,7 @@ const engineSettings: Settings = {
   sessions: { defaultDriverKind: null, defaultPermissionMode: 'ask' },
   notifications: { settleSound: true },
   permissions: { allowlist: ['git status'] },
+  tools: { fixmap: true },
   window: null,
 }
 
@@ -210,6 +211,26 @@ describe('AdvancedSettings', () => {
     expect(await screen.findByText('Ari 0.4.0 is available to download.')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Update' }))
     await waitFor(() => expect(mocks.invoke).toHaveBeenCalledWith('app.update.download'))
+  })
+
+  it('offers FixMap to agents by default and persists switching it off', async () => {
+    const user = userEvent.setup()
+    render(<AdvancedSettings />)
+
+    const toggle = screen.getByRole('switch', { name: 'FixMap' })
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
+
+    await user.click(toggle)
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledWith({ tools: { fixmap: false } }))
+  })
+
+  it('carries agent tools through a settings bundle', () => {
+    const parsed = parseSettingsBundle(
+      JSON.stringify({ version: 1, tools: { fixmap: false } }),
+    )
+    expect(parsed.ok && parsed.value.tools).toEqual({ fixmap: false })
+    const bad = parseSettingsBundle(JSON.stringify({ version: 1, tools: 'off' }))
+    expect(bad.ok).toBe(false)
   })
 
   it('surfaces why a manual check was refused instead of failing silently', async () => {

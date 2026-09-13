@@ -4,6 +4,7 @@ import type { SettingsUpdate } from '@ari/contracts/settings'
 import { createLogger } from '@ari/shared/logger'
 import { err, formatUnknownError, ok, type Result } from '@ari/shared/result'
 import { Button } from '@ari/ui/button'
+import { Switch } from '@ari/ui/switch'
 import { useAppUpdate, type AppUpdate, type AppUpdateState, type UpdatePhase } from '../updates'
 import { SettingsPage } from './SettingsPage'
 import { useEngineSettings } from './useEngineSettings'
@@ -83,6 +84,10 @@ export function parseSettingsBundle(raw: string): Result<SettingsUpdate, string>
   if (bundle['permissions'] !== undefined) {
     if (!isPlainObject(bundle['permissions'])) return err('"permissions" must be an object')
     patch.permissions = bundle['permissions']
+  }
+  if (bundle['tools'] !== undefined) {
+    if (!isPlainObject(bundle['tools'])) return err('"tools" must be an object')
+    patch.tools = bundle['tools']
   }
   return ok(patch)
 }
@@ -236,6 +241,33 @@ export function AdvancedSettings() {
               />
             </div>
           )}
+        </div>
+      </section>
+
+      <section aria-labelledby="advanced-tools-heading" className="space-y-3">
+        <h2 id="advanced-tools-heading" className="text-sm font-medium">
+          Agent tools
+        </h2>
+        <div className="space-y-3 rounded-md border border-border bg-surface-1 p-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 space-y-0.5">
+              <p className="text-sm text-fg">FixMap</p>
+              <p className="text-xs text-fg-muted">
+                Offers your own FixMap install to every agent as a tool server, so it can ask which
+                files and tests a task touches before editing. Ari never downloads it; with FixMap
+                not installed, nothing is offered.
+              </p>
+            </div>
+            <Switch
+              checked={settings?.tools.fixmap ?? true}
+              onCheckedChange={(checked) => {
+                void update({ tools: { fixmap: checked } }).catch((error: unknown) => {
+                  log.warn('failed to persist tool setting', { error })
+                })
+              }}
+              aria-label="FixMap"
+            />
+          </div>
         </div>
       </section>
 

@@ -80,6 +80,7 @@ import { planFor } from '@ari/providers/package-manager'
 import { runInstall, type InstallHandle } from '@ari/providers/install'
 import { AcpDriver } from '@ari/providers/acp'
 import { resolveAcpLaunch, probeLaunch } from '@ari/providers/acp/launches'
+import { defaultMcpServers } from '@ari/providers/acp/mcp-servers'
 import type { AcpLaunch } from '@ari/providers/acp/connection'
 import type { AcpTerminalLogin } from '@ari/providers/acp/protocol'
 import {
@@ -436,14 +437,24 @@ function hydrateDrivers(registry: DriverRegistry): void {
             cliBinaryPath: detection.binaryPath,
           })
           registry.register(
-            new AcpDriver(candidate.kind, launch, candidate.make(detection.binaryPath), (wall) =>
-              publishAuthWall(candidate.kind, wall),
+            new AcpDriver(
+              candidate.kind,
+              launch,
+              candidate.make(detection.binaryPath),
+              (wall) => publishAuthWall(candidate.kind, wall),
+              // Read per turn, from the settings already loaded at boot, so
+              // turning a tool off takes effect on the next turn.
+              () => defaultMcpServers({ fixmap: getSettingsStore().current.tools.fixmap }, env),
             ),
           )
           log.info('driver registered', {
             kind: candidate.kind,
             version: detection.version,
             transport: launch === null ? 'cli' : 'acp+fallback',
+            tools: defaultMcpServers(
+              { fixmap: getSettingsStore().current.tools.fixmap },
+              env,
+            ).map((server) => server.name),
           })
         } catch (error) {
           log.error('driver detection failed', { kind: candidate.kind, error: String(error) })

@@ -21,6 +21,7 @@
     "./acp": "./src/acp/acp-driver.ts",
     "./acp/connection": "./src/acp/connection.ts",
     "./acp/launches": "./src/acp/launches.ts",
+    "./acp/mcp-servers": "./src/acp/mcp-servers.ts",
     "./acp/protocol": "./src/acp/protocol.ts",
     "./acp/thought": "./src/acp/thought.ts",
     "./acp/modes": "./src/acp/modes.ts",

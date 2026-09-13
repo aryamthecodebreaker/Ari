@@ -28,6 +28,7 @@ const engineSettings: Settings = {
   sessions: { defaultDriverKind: null, defaultPermissionMode: 'ask' },
   notifications: { settleSound: true },
   permissions: { allowlist: [] },
+  tools: { fixmap: true },
   window: null,
 }
 

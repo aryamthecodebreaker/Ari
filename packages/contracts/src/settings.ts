@@ -78,6 +78,15 @@ export const settingsSchema = z.object({
       allowlist: z.array(z.string()).default([]),
     })
     .default({ allowlist: [] }),
+  tools: z
+    .object({
+      /**
+       * Offer the user's own FixMap install to agents as an MCP server. Has no
+       * effect when FixMap is not installed — Ari never fetches it.
+       */
+      fixmap: z.boolean().default(true),
+    })
+    .default({ fixmap: true }),
   window: z
     .object({
       x: z.number().int(),
@@ -128,6 +137,12 @@ export const settingsUpdateSchema = z.object({
     })
     .partial()
     .optional(),
+  tools: z
+    .object({
+      fixmap: z.boolean(),
+    })
+    .partial()
+    .optional(),
   window: z
     .object({
       x: z.number().int(),
@@ -148,5 +163,6 @@ export const defaultSettings: Settings = {
   sessions: { defaultDriverKind: null, defaultPermissionMode: 'ask' },
   notifications: { settleSound: true },
   permissions: { allowlist: [] },
+  tools: { fixmap: true },
   window: null,
 }

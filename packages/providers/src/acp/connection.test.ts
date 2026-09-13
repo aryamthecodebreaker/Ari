@@ -245,6 +245,38 @@ describe('AcpConnection', () => {
     connection.kill()
   })
 
+  it('offers the host’s MCP servers on every session call', async () => {
+    // The agent spawns these itself, so they have to ride along with the call
+    // that opens or re-opens the session — not just the first one.
+    const fixmap = { name: 'fixmap', command: 'C:\\npm\\fixmap.cmd', args: ['mcp'], env: [] }
+    const child = fakeChild()
+    script(child, (method) => {
+      if (method === 'initialize')
+        return { protocolVersion: 1, agentCapabilities: { loadSession: true } }
+      if (method === 'session/new') return { sessionId: 'sess_9' }
+      if (method === 'session/load') return null
+      if (method === 'session/resume') return null
+      return undefined
+    })
+    const connection = await AcpConnection.connect({
+      launch: LAUNCH,
+      cwd: '/w',
+      spawn: () => child,
+      mcpServers: [fixmap],
+    })
+
+    await connection.newSession('/w')
+    await connection.loadSession('sess_9', '/w')
+    await connection.resumeSession('sess_9', '/w')
+    for (const method of ['session/new', 'session/load', 'session/resume']) {
+      const sent = child.sent.find((m) => m['method'] === method) as
+        | { params?: Record<string, unknown> }
+        | undefined
+      expect(sent?.params?.['mcpServers']).toEqual([fixmap])
+    }
+    connection.kill()
+  })
+
   it('routes session/update notifications to the hook', async () => {
     const child = fakeChild()
     script(child, STANDARD_AGENT)
