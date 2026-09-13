@@ -62,6 +62,7 @@ import {
   useSidebarWidth,
 } from './shell/use-pane-width'
 import { WelcomePanel } from './features/welcome'
+import { useCustomBackground } from './features/appearance/useCustomBackground'
 import './features/transcript/transcript.css'
 
 type InspectorId = Exclude<SidebarNavId, 'session' | 'settings'>
@@ -1064,6 +1065,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <MotionProvider>
         <ToastProvider>
           <UpdateToastWatcher />
+          <BackgroundWatcher />
           {children}
         </ToastProvider>
       </MotionProvider>
@@ -1075,6 +1077,16 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 function UpdateToastWatcher() {
   useUpdateToasts()
   useAppUpdateToast()
+  return null
+}
+
+/**
+ * Headless: paints the user's own background and rotates it. Mounted here
+ * rather than in the settings screen because rotation has to keep running
+ * while the user is working in a session.
+ */
+function BackgroundWatcher() {
+  useCustomBackground()
   return null
 }
 

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+﻿import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Settings } from '@ari/contracts/settings'
@@ -32,6 +32,10 @@ const engineSettings: Settings = {
     glass: true,
     reducedMotion: false,
     wallpaper: 'none',
+    customWallpapers: [],
+    wallpaperRotation: false,
+    wallpaperRotationMinutes: 10,
+    wallpaperClarity: 0,
   },
   sessions: { defaultDriverKind: null, defaultPermissionMode: 'ask' },
   notifications: { settleSound: true },

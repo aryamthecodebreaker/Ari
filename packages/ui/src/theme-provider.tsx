@@ -115,6 +115,13 @@ function applyWallpaperAttr(root: HTMLElement, wallpaper: WallpaperSetting): voi
     root.style.removeProperty('--ari-wallpaper-image')
     return
   }
+  // 'custom' images live on the user's disk, which only the main process can
+  // read, so the app owns `--ari-wallpaper-image` here. Writing it would race
+  // the app's own effect and blank the scene.
+  if (wallpaper === 'custom') {
+    root.dataset['ariWallpaper'] = wallpaper
+    return
+  }
   root.dataset['ariWallpaper'] = wallpaper
   const src = wallpapers.find((w) => w.id === wallpaper)?.src
   if (src === undefined) root.style.removeProperty('--ari-wallpaper-image')

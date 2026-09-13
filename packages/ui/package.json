@@ -21,6 +21,7 @@
     "./textarea": "./src/components/Textarea.tsx",
     "./field": "./src/components/Field.tsx",
     "./switch": "./src/components/Switch.tsx",
+    "./slider": "./src/components/Slider.tsx",
     "./checkbox": "./src/components/Checkbox.tsx",
     "./badge": "./src/components/Badge.tsx",
     "./kbd": "./src/components/Kbd.tsx",

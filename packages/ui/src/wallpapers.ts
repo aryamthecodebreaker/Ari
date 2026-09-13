@@ -16,8 +16,13 @@ import moonLandscape2 from './assets/wallpapers/moon-landscape-2.jpg'
 export const wallpaperIds = ['anime-city', 'moon-landscape', 'moon-landscape-2'] as const
 export type WallpaperId = (typeof wallpaperIds)[number]
 
-/** A wallpaper preference: a bundled scene, or 'none' for the plain theme. */
-export type WallpaperSetting = 'none' | WallpaperId
+/**
+ * A wallpaper preference: a bundled scene, 'custom' for the user's own picked
+ * images, or 'none' for the plain theme. The scene URL for 'custom' is not
+ * known to this package — the app supplies it, since only the main process can
+ * read a file off the user's disk.
+ */
+export type WallpaperSetting = 'none' | 'custom' | WallpaperId
 
 export interface Wallpaper {
   id: WallpaperId
@@ -55,6 +60,5 @@ export function isWallpaperId(value: unknown): value is WallpaperId {
 }
 
 export function isWallpaperSetting(value: unknown): value is WallpaperSetting {
-  return value === 'none' || isWallpaperId(value)
+  return value === 'none' || value === 'custom' || isWallpaperId(value)
 }
-

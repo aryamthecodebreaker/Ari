@@ -14,7 +14,12 @@ describe('wallpaper.css', () => {
   it('paints one continuous plate carrying the glass recipe', () => {
     expect(css).toContain('[data-ari-wallpaper] .ari-glass-pane {')
     expect(css).toMatch(/\.ari-glass-pane \{[^}]*background: var\(--ari-glass-scrim\)/)
-    expect(css).toMatch(/\.ari-glass-pane \{[^}]*backdrop-filter: blur\(28px\) saturate\(1\.35\)/)
+    // The radius is a variable so Background clarity can thin it, but the
+    // fallback is the original 28px: a build with no clarity set paints
+    // exactly as it did before the setting existed.
+    expect(css).toMatch(
+      /\.ari-glass-pane \{[^}]*backdrop-filter: blur\(var\(--ari-wallpaper-blur, 28px\)\) saturate\(1\.35\)/,
+    )
   })
 
   it('neutralizes nested chrome and pane fills so no surface double-tints', () => {

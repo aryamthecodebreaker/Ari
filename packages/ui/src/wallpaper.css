@@ -31,10 +31,29 @@
 
 [data-ari-wallpaper] {
   /* Glass planes rest on the wallpaper instead of the desktop, so they take
-     theme-derived translucency in every theme, not just glass-capable ones. */
-  --ari-glass-scrim: color-mix(in oklab, var(--ari-surface-0) 72%, transparent);
-  --ari-glass-overlay: color-mix(in oklab, var(--ari-surface-2) 82%, transparent);
-  --ari-glass-input: color-mix(in oklab, var(--ari-surface-1) 85%, transparent);
+     theme-derived translucency in every theme, not just glass-capable ones.
+
+     The four percentages and the blur radius are the *opaque* end of the
+     clarity setting. The app overrides these four custom properties on <html>
+     as the user drags Background clarity; the fallbacks here are the original
+     frosted look, so a build with no clarity setting paints exactly as before.
+     The clarity floor lives in the app (see background-clarity.ts) because
+     legibility is a product decision, not a cascade one. */
+  --ari-glass-scrim: color-mix(
+    in oklab,
+    var(--ari-surface-0) var(--ari-wallpaper-tint, 72%),
+    transparent
+  );
+  --ari-glass-overlay: color-mix(
+    in oklab,
+    var(--ari-surface-2) var(--ari-wallpaper-tint-overlay, 82%),
+    transparent
+  );
+  --ari-glass-input: color-mix(
+    in oklab,
+    var(--ari-surface-1) var(--ari-wallpaper-tint-input, 85%),
+    transparent
+  );
 }
 
 /* The scene. Negative z-index paints it above the canvas background but below
@@ -63,8 +82,8 @@
 /* The single plate: one continuous frosted surface for the whole window. */
 [data-ari-wallpaper] .ari-glass-pane {
   background: var(--ari-glass-scrim);
-  -webkit-backdrop-filter: blur(28px) saturate(1.35);
-  backdrop-filter: blur(28px) saturate(1.35);
+  -webkit-backdrop-filter: blur(var(--ari-wallpaper-blur, 28px)) saturate(1.35);
+  backdrop-filter: blur(var(--ari-wallpaper-blur, 28px)) saturate(1.35);
 }
 
 /* Nothing inside the plate re-tints it: structural chrome and pane fills go

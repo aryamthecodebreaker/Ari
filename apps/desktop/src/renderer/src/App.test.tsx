@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import { fireEvent } from '@testing-library/react'
 import { useToast } from '@ari/ui/toast'
+import { defaultSettings } from '@ari/contracts/settings'
 import { AppProviders, App } from './App'
 import { BRANCH_POLL_MS, SessionBranchChip } from './features/session/SessionBranchChip'
 import { splitLayoutActions, splitLayoutSnapshot } from './features/split/use-split-layout'
@@ -19,6 +20,17 @@ function ToastProbe() {
 }
 
 describe('AppProviders', () => {
+  beforeEach(() => {
+    // AppProviders mounts headless watchers that read the engine: the bare
+    // `vi.fn()` below answers every method with undefined, which no caller
+    // can await.
+    invokeMock.mockReset()
+    invokeMock.mockImplementation(async (method) => {
+      if (method === 'settings.get') return { appearance: defaultSettings.appearance }
+      return undefined
+    })
+  })
+
   it('lets useToast consumers fire without a wrapping gallery', async () => {
     const user = userEvent.setup()
     render(

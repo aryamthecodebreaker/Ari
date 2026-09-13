@@ -25,9 +25,23 @@ export type ThemeMode = z.infer<typeof themeModeSchema>
 export const wallpaperIdSchema = z.enum(['anime-city', 'moon-landscape', 'moon-landscape-2'])
 export type WallpaperIdSetting = z.infer<typeof wallpaperIdSchema>
 
-/** A wallpaper selection: a bundled scene, or 'none' for the plain theme. */
-export const wallpaperSchema = z.union([z.literal('none'), wallpaperIdSchema])
+/**
+ * A wallpaper selection: a bundled scene, 'custom' for the user's own picked
+ * images, or 'none' for the plain theme.
+ */
+export const wallpaperSchema = z.union([
+  z.literal('none'),
+  z.literal('custom'),
+  wallpaperIdSchema,
+])
 export type WallpaperSetting = z.infer<typeof wallpaperSchema>
+
+/** Upper bound on the picked-image library; keeps the settings file small. */
+export const MAX_CUSTOM_WALLPAPERS = 40
+
+/** Rotation bounds, in minutes: one minute to one day. */
+export const MIN_WALLPAPER_ROTATION_MINUTES = 1
+export const MAX_WALLPAPER_ROTATION_MINUTES = 1440
 
 const defaultAppearance = {
   themeId: 'obsidian',
@@ -35,6 +49,9 @@ const defaultAppearance = {
   glass: true,
   reducedMotion: false,
   wallpaper: 'none',
+  wallpaperRotation: false,
+  wallpaperRotationMinutes: 10,
+  wallpaperClarity: 0,
 } as const
 
 /** Persisted application settings. Versioned for forward migration. */
@@ -58,8 +75,34 @@ export const settingsSchema = z.object({
       reducedMotion: z.boolean().default(defaultAppearance.reducedMotion),
       /** Bundled background scene composited under the themed UI, or 'none'. */
       wallpaper: wallpaperSchema.default(defaultAppearance.wallpaper),
+      /**
+       * Absolute paths to the user's own background images. Also the allowlist
+       * the engine checks before reading any file for the renderer, so a path
+       * that is not in here is never opened.
+       */
+      customWallpapers: z
+        .array(z.string().min(1))
+        .max(MAX_CUSTOM_WALLPAPERS)
+        .default(() => []),
+      /** Cycle through `customWallpapers` instead of holding one image. */
+      wallpaperRotation: z.boolean().default(defaultAppearance.wallpaperRotation),
+      /** Minutes each image is shown while rotation is on. */
+      wallpaperRotationMinutes: z
+        .number()
+        .int()
+        .min(MIN_WALLPAPER_ROTATION_MINUTES)
+        .max(MAX_WALLPAPER_ROTATION_MINUTES)
+        .default(defaultAppearance.wallpaperRotationMinutes),
+      /**
+       * How plainly the scene reads through the app's glass: 0 keeps the
+       * original frosted plate, 1 thins the tint and blur to their legible
+       * floor. Never reaches zero tint — text has to stay readable.
+       */
+      wallpaperClarity: z.number().min(0).max(1).default(defaultAppearance.wallpaperClarity),
     })
-    .default(defaultAppearance),
+    // A function default: the picked-image list is per-install mutable state,
+    // so every parse has to get its own array rather than share one literal.
+    .default(() => ({ ...defaultAppearance, customWallpapers: [] })),
   sessions: z
     .object({
       defaultDriverKind: driverKindSchema.nullable().default(null),
@@ -106,6 +149,14 @@ export const settingsUpdateSchema = z.object({
       glass: z.boolean(),
       reducedMotion: z.boolean(),
       wallpaper: wallpaperSchema,
+      customWallpapers: z.array(z.string().min(1)).max(MAX_CUSTOM_WALLPAPERS),
+      wallpaperRotation: z.boolean(),
+      wallpaperRotationMinutes: z
+        .number()
+        .int()
+        .min(MIN_WALLPAPER_ROTATION_MINUTES)
+        .max(MAX_WALLPAPER_ROTATION_MINUTES),
+      wallpaperClarity: z.number().min(0).max(1),
     })
     .partial()
     .optional(),
@@ -144,7 +195,7 @@ export type SettingsUpdate = z.input<typeof settingsUpdateSchema>
 export const defaultSettings: Settings = {
   delegation: delegationSettingsSchema.parse({}),
   version: 1,
-  appearance: { ...defaultAppearance },
+  appearance: { ...defaultAppearance, customWallpapers: [] },
   sessions: { defaultDriverKind: null, defaultPermissionMode: 'ask' },
   notifications: { settleSound: true },
   permissions: { allowlist: [] },

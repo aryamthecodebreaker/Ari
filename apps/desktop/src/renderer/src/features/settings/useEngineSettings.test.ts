@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from '@testing-library/react'
+﻿import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Settings } from '@ari/contracts/settings'
 import { delegationSettingsSchema } from '@ari/contracts/agent-control'
@@ -19,6 +19,10 @@ const baseSettings: Settings = {
     glass: true,
     reducedMotion: false,
     wallpaper: 'none',
+    customWallpapers: [],
+    wallpaperRotation: false,
+    wallpaperRotationMinutes: 10,
+    wallpaperClarity: 0,
   },
   sessions: { defaultDriverKind: null, defaultPermissionMode: 'ask' },
   notifications: { settleSound: true },
@@ -61,6 +65,10 @@ describe('useEngineSettings', () => {
         glass: true,
         reducedMotion: true,
         wallpaper: 'none',
+        customWallpapers: [],
+        wallpaperRotation: false,
+        wallpaperRotationMinutes: 10,
+        wallpaperClarity: 0,
       },
     }
     const { result } = renderHook(() => useEngineSettings())

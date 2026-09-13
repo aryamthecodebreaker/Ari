@@ -464,6 +464,14 @@ export const rpcParams = {
   /** Slots a project ahead of `beforeId` in the sidebar (null = last). */
   'project.move': z.object({ id: z.string().min(1), beforeId: z.string().min(1).nullable() }),
   'dialog.pickFolder': z.object({ defaultPath: z.string().min(1).optional() }),
+  /** Native multi-select image picker for custom backgrounds. */
+  'dialog.pickImages': z.undefined(),
+  /**
+   * Reads one custom background as a data URL. The path must already be in
+   * `appearance.customWallpapers`, so the renderer can only re-read images the
+   * user picked through the dialog above — never an arbitrary file.
+   */
+  'wallpaper.read': z.object({ path: z.string().min(1) }),
   'shell.revealPath': z.object({ path: z.string().min(1) }),
   /** Opens a URL in the OS browser; only http/https/mailto reach openExternal. */
   'shell.openUrl': z.object({ url: z.string().min(1).max(2048) }),
@@ -738,6 +746,10 @@ export interface RpcResults {
   'project.move': Project | null
   /** Native folder picker; `path` is null when the user cancels (clean no-op). */
   'dialog.pickFolder': { path: string | null }
+  /** Native image picker; an empty array means the user cancelled. */
+  'dialog.pickImages': { paths: string[] }
+  /** `dataUrl` is null when the file is missing, too large, or not an image. */
+  'wallpaper.read': { dataUrl: string | null }
   'shell.revealPath': { revealed: boolean }
   'shell.openUrl': { opened: boolean }
   'files.index': { paths: string[] }

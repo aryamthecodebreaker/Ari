@@ -1,6 +1,6 @@
 import { open, readFile, readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { extname, join, resolve } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, shell, type WebContents } from 'electron'
 import type { IPty, IPtyForkOptions } from '@lydell/node-pty'
 import type { JournalEvent } from '@ari/contracts/events'
@@ -98,6 +98,26 @@ import { FileConversationStore } from '@ari/ari-core/conversation-store'
 import { todoFilenameFor } from '@ari/ari-core/todo'
 
 const log = createLogger('desktop:rpc')
+
+/** Image types the custom-background picker offers and `wallpaper.read` serves. */
+const WALLPAPER_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'] as const
+
+const WALLPAPER_MIME_TYPES: Readonly<Record<string, string>> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.avif': 'image/avif',
+}
+
+/** Ceiling on a background file; it is inlined into the renderer as a data URL. */
+const MAX_WALLPAPER_BYTES = 24 * 1024 * 1024
+
+/** Data-URL mime for a background path, or null when it is not a served type. */
+function wallpaperMimeType(path: string): string | null {
+  return WALLPAPER_MIME_TYPES[extname(path).toLowerCase()] ?? null
+}
 
 /**
  * Kinds whose ACP server is probed for the agent's own model list. Adapters
@@ -1176,6 +1196,48 @@ export function registerRpc(contents: WebContents, options: RegisterRpcOptions =
     // Cancel must be a clean no-op, not an error the renderer has to catch.
     if (result.canceled) return { path: null }
     return { path: result.filePaths[0] ?? null }
+  })
+
+  r.register('dialog.pickImages', async () => {
+    const parent = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0] ?? null
+    const options: Electron.OpenDialogOptions = {
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Images', extensions: [...WALLPAPER_EXTENSIONS] }],
+    }
+    const result = parent
+      ? await dialog.showOpenDialog(parent, options)
+      : await dialog.showOpenDialog(options)
+    if (result.canceled) return { paths: [] }
+    // The dialog filter is a hint the user can defeat by typing a filename, so
+    // the extension is checked again: `wallpaper.read` only serves the types in
+    // this map, and a path that can never load has no business being saved.
+    return { paths: result.filePaths.filter((path) => wallpaperMimeType(path) !== null) }
+  })
+
+  // Custom backgrounds live outside every project root, so the path jail does
+  // not apply here. The stored list is the allowlist instead: a path the user
+  // has not picked through the dialog above is never opened, so this cannot
+  // become a "read any file on disk" primitive for the renderer.
+  r.register('wallpaper.read', async (params) => {
+    const mimeType = wallpaperMimeType(params.path)
+    if (mimeType === null) return { dataUrl: null }
+    const store = getSettingsStore()
+    await store.load()
+    if (!store.current.appearance.customWallpapers.includes(params.path)) {
+      log.warn('refused a background read outside the saved list')
+      return { dataUrl: null }
+    }
+    try {
+      const info = await stat(params.path)
+      // A data URL costs roughly 4/3 the file size in renderer memory, so an
+      // enormous image is refused rather than silently wedging the window.
+      if (!info.isFile() || info.size > MAX_WALLPAPER_BYTES) return { dataUrl: null }
+      const bytes = await readFile(params.path)
+      return { dataUrl: `data:${mimeType};base64,${bytes.toString('base64')}` }
+    } catch {
+      // Deleted, renamed, or unreadable: the renderer falls back to the theme.
+      return { dataUrl: null }
+    }
   })
 
   r.register('shell.revealPath', async (params) => {

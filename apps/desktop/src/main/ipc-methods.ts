@@ -63,6 +63,8 @@ export const IPC_METHODS = [
   'project.remove',
   'project.move',
   'dialog.pickFolder',
+  'dialog.pickImages',
+  'wallpaper.read',
   'shell.revealPath',
   'shell.openUrl',
   'files.index',
