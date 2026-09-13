@@ -64,6 +64,18 @@ export interface CheckpointCapturer {
 /** Upper bound on stored checkpoints per session before oldest are pruned. */
 const MAX_CHECKPOINTS_PER_SESSION = 50
 
+/**
+ * Announces Ari's own CLI to an agent allowed to operate Ari.
+ *
+ * Sent on the first prompt of a provider thread only. Once the provider has a
+ * thread to resume, this line is already in its transcript, and repeating it
+ * ahead of every message reads to the agent as text injected into what the
+ * user typed — agents have called it a prompt injection and refused to act on
+ * it, which costs Ari the control surface the line exists to advertise.
+ */
+const ARI_CONTROL_PREAMBLE =
+  '[Ari control surface: this session can operate Ari. Commands: ari env, ari agents, ari session spawn|prompt|wait|read|diff|integrate|stop|destroy. Full protocol: ari --skill. Never disclose ARI_CONTROL_TOKEN.]'
+
 export interface EngineDeps {
   store: SessionStore
   registry: DriverRegistry
@@ -535,8 +547,8 @@ export class Engine {
         sessionId: session.id,
         workspacePath,
         prompt:
-          runtimeEnv?.ARI_ENV === '1'
-            ? `[Ari control surface: this session can operate Ari. Commands: ari env, ari agents, ari session spawn|prompt|wait|read|diff|integrate|stop|destroy. Full protocol: ari --skill. Never disclose ARI_CONTROL_TOKEN.]\n\n${prompt}`
+          runtimeEnv?.ARI_ENV === '1' && resumeOf === null
+            ? `${ARI_CONTROL_PREAMBLE}\n\n${prompt}`
             : prompt,
         modelId: session.modelId,
         permissionMode: session.permissionMode,
