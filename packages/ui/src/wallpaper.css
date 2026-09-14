@@ -37,7 +37,7 @@
      clarity setting. The app overrides these four custom properties on <html>
      as the user drags Background clarity; the fallbacks here are the original
      frosted look, so a build with no clarity setting paints exactly as before.
-     The clarity floor lives in the app (see background-clarity.ts) because
+     The clarity floor lives in the app (see custom-background.ts) because
      legibility is a product decision, not a cascade one. */
   --ari-glass-scrim: color-mix(
     in oklab,
