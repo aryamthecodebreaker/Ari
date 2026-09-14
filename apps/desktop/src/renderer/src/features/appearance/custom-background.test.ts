@@ -60,17 +60,17 @@ describe('clarityVars', () => {
     const pane = amount(clear['--ari-wallpaper-tint'] ?? '')
     // The composer is a thing you aim at: it has to stay a plate on top of the
     // picture, not dissolve into it along with the window behind it.
-    expect(amount(clear['--ari-wallpaper-tint-input'] ?? '')).toBeGreaterThan(pane + 50)
-    expect(amount(clear['--ari-wallpaper-tint-overlay'] ?? '')).toBeGreaterThan(pane + 50)
+    expect(amount(clear['--ari-wallpaper-tint-input'] ?? '')).toBeGreaterThan(pane + 30)
+    expect(amount(clear['--ari-wallpaper-tint-overlay'] ?? '')).toBeGreaterThan(pane + 30)
   })
 
-  it('shows the picture essentially bare at the clearest setting', () => {
+  it('keeps a readable plate even at the clearest setting', () => {
     const clear = clarityVars(1)
-    // No blur at all up here, and only a trace of tint — enough that panes
-    // still read as panes, not enough to wash the picture out.
-    expect(amount(clear['--ari-wallpaper-blur'] ?? '')).toBe(0)
-    expect(amount(clear['--ari-wallpaper-tint'] ?? '')).toBeGreaterThan(0)
-    expect(amount(clear['--ari-wallpaper-tint'] ?? '')).toBeLessThan(10)
+    // A trace of tint and no blur failed over bright, busy photos: text was
+    // hard to read even outlined. The floor keeps real tint behind the text
+    // and enough blur to strip the fine detail directly behind the glyphs.
+    expect(amount(clear['--ari-wallpaper-tint'] ?? '')).toBeGreaterThanOrEqual(25)
+    expect(amount(clear['--ari-wallpaper-blur'] ?? '')).toBeGreaterThan(0)
   })
 
   it('clamps out-of-range and non-finite input instead of emitting junk CSS', () => {

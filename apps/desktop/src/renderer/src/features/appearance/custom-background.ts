@@ -7,16 +7,22 @@
 const OPAQUE = { tint: 72, overlay: 82, input: 85, blur: 28 }
 
 /**
- * The clear end. The window plate goes to a trace of tint and no blur at all,
- * so the picture reads as itself.
+ * The clear end, and a floor on legibility rather than a picture with text
+ * scattered over it.
  *
- * Inputs and floating surfaces deliberately do not follow it down. The
- * composer, popovers and menus are things you aim at: they have to stay
- * findable against any picture, and they keep their own blur from glass.css,
- * so holding their tint high reads as a dark glossy plate resting on the
- * scene rather than a pane that dissolved into it.
+ * A trace of tint and no blur looked striking and failed at the one job the
+ * window has: over a bright or busy photo, text was hard to read even with an
+ * outline. So the clearest setting still keeps about a third of the plate —
+ * enough to pull any photo toward the theme's own tone behind the text — and a
+ * light blur, which strips the fine detail sitting directly behind glyphs (the
+ * thing that actually fights reading) while the picture stays recognisable.
+ *
+ * Inputs and floating surfaces deliberately sit well above that. The composer,
+ * popovers and menus are things you aim at: they have to stay findable against
+ * any picture, and they keep their own blur from glass.css, so holding their
+ * tint high reads as a dark glossy plate resting on the scene.
  */
-const CLEAR = { tint: 6, overlay: 64, input: 74, blur: 0 }
+const CLEAR = { tint: 32, overlay: 70, input: 78, blur: 6 }
 
 /**
  * Text halo at each end. The plate is what keeps text legible at clarity 0, so
@@ -78,4 +84,23 @@ export function clampRotationIndex(index: number, count: number): number {
   if (count <= 0) return 0
   if (!Number.isFinite(index) || index < 0) return 0
   return index >= count ? 0 : Math.floor(index)
+}
+
+/**
+ * The pictures worth holding decoded: the one on screen and, while rotating,
+ * the one due next, so the change lands without a blank frame. Never more than
+ * two whatever the library size — memory stays flat as pictures are added,
+ * where caching every picture visited grew with the library.
+ */
+export function retainedPaths(
+  images: readonly string[],
+  index: number,
+  rotating: boolean,
+): string[] {
+  const at = clampRotationIndex(index, images.length)
+  const current = images[at]
+  if (current === undefined) return []
+  if (!rotating) return [current]
+  const next = images[nextRotationIndex(at, images.length)]
+  return next === undefined || next === current ? [current] : [current, next]
 }

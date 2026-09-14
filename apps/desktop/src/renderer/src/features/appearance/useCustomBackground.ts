@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTheme } from '@ari/ui/theme-provider'
 import type { Settings } from '@ari/contracts/settings'
 import { createLogger } from '@ari/shared/logger'
@@ -8,6 +8,7 @@ import {
   clampRotationIndex,
   clarityVars,
   nextRotationIndex,
+  retainedPaths,
   rotationIntervalMs,
 } from './custom-background'
 
@@ -26,7 +27,13 @@ export function announceAppearanceChange(): void {
 
 type Appearance = Settings['appearance']
 
-/** Data URLs already read this session, keyed by path; images rarely change. */
+/**
+ * Data URLs for the pictures rotation needs right now — the one on screen and
+ * the one due next — and nothing else. A data URL costs about 4/3 of its file
+ * in renderer memory, so caching every picture visited would grow with the
+ * library: forty images at the reader's size limit is over a gigabyte held for
+ * the whole session. See {@link retainedPaths} for what is kept.
+ */
 const imageCache = new Map<string, Promise<string | null>>()
 
 function readImage(path: string): Promise<string | null> {
@@ -37,11 +44,16 @@ function readImage(path: string): Promise<string | null> {
     .then((result) => result.dataUrl)
     .catch(() => null)
   imageCache.set(path, pending)
+  // A failed read is not a fact about the file — it may have been mid-copy or
+  // on a drive that was asleep — so it must not be remembered as one.
+  void pending.then((dataUrl) => {
+    if (dataUrl === null && imageCache.get(path) === pending) imageCache.delete(path)
+  })
   return pending
 }
 
-/** Drops cached images that are no longer in the user's library. */
-function pruneCache(paths: readonly string[]): void {
+/** Releases every cached picture outside `paths`. */
+function retainOnly(paths: readonly string[]): void {
   const keep = new Set(paths)
   for (const path of imageCache.keys()) {
     if (!keep.has(path)) imageCache.delete(path)
@@ -60,10 +72,6 @@ export function useCustomBackground(): void {
   const { wallpaper } = useTheme()
   const [appearance, setAppearance] = useState<Appearance | null>(null)
   const [index, setIndex] = useState(0)
-  // Rotation advances off a timer, so the effect that schedules it must not
-  // also depend on the index it sets â€” that would restart the clock every tick.
-  const indexRef = useRef(0)
-  indexRef.current = index
 
   useEffect(() => {
     let cancelled = false
@@ -87,16 +95,17 @@ export function useCustomBackground(): void {
   const rotating = (appearance?.wallpaperRotation ?? false) && images.length > 1
   const rotationMinutes = appearance?.wallpaperRotationMinutes ?? 10
   const clarity = appearance?.wallpaperClarity ?? 0
-  // Joined, not the array: a fresh array identity on every settings read would
-  // otherwise restart rotation and re-run the paint effect each time.
+  // A value, not the array: every settings read hands back a fresh array, and
+  // depending on its identity would restart rotation and repaint each time.
   const imageKey = JSON.stringify(images)
 
   useEffect(() => {
-    pruneCache(images)
     setIndex((current) => clampRotationIndex(current, images.length))
     // `images` is covered by imageKey; the array identity itself is not stable.
   }, [imageKey])
 
+  // The interval does not depend on `index`: the functional update advances it,
+  // so the clock is not restarted by the very tick it produces.
   useEffect(() => {
     if (!rotating || wallpaper !== 'custom') return
     const timer = setInterval(() => {
@@ -105,8 +114,8 @@ export function useCustomBackground(): void {
     return () => clearInterval(timer)
   }, [rotating, rotationMinutes, imageKey, wallpaper])
 
-  // Clarity applies to bundled scenes too â€” it describes the glass over any
-  // wallpaper â€” but means nothing with no wallpaper at all.
+  // Clarity applies to bundled scenes too — it describes the glass over any
+  // wallpaper — but means nothing with no wallpaper at all.
   useEffect(() => {
     const root = document.documentElement
     if (wallpaper === 'none') {
@@ -120,8 +129,14 @@ export function useCustomBackground(): void {
 
   useEffect(() => {
     const root = document.documentElement
-    if (wallpaper !== 'custom') return
-    const path = images[clampRotationIndex(index, images.length)]
+    if (wallpaper !== 'custom') {
+      // Nothing of ours is on screen, so nothing of ours stays in memory.
+      retainOnly([])
+      return
+    }
+    const keep = retainedPaths(images, index, rotating)
+    retainOnly(keep)
+    const [path, upcoming] = keep
     if (path === undefined) {
       // 'custom' with an empty library: no scene to paint, and the plate alone
       // over the theme background is the honest result.
@@ -137,8 +152,11 @@ export function useCustomBackground(): void {
       }
       root.style.setProperty('--ari-wallpaper-image', `url("${dataUrl}")`)
     })
+    // Decode the next picture ahead of its turn so the change lands at once
+    // rather than on a blank frame; it is one of the two the cache may hold.
+    if (upcoming !== undefined) void readImage(upcoming)
     return () => {
       cancelled = true
     }
-  }, [wallpaper, index, imageKey])
+  }, [wallpaper, index, imageKey, rotating])
 }

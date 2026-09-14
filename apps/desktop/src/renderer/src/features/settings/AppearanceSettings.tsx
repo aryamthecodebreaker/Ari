@@ -377,22 +377,46 @@ export function AppearanceSettings() {
   }
 
   const handleImagesChange = (next: string[]): void => {
-    persist({ appearance: { customWallpapers: next } })
-    // Picking pictures is how a user asks for them, so the first add selects
-    // them too; losing the last one falls back to the plain theme rather than
-    // leaving "My images" selected with nothing to show.
-    if (next.length > 0 && wallpaper !== 'custom') setWallpaper('custom')
-    if (next.length === 0 && wallpaper === 'custom') setWallpaper('none')
+    // The library write lands before the selection changes. Both reach
+    // SettingsStore.update, which builds from its in-memory copy and writes
+    // through a single temp file, so starting them together could let one
+    // overwrite the other or fail the other's rename.
+    void update({ appearance: { customWallpapers: next } }).then(
+      () => {
+        announceAppearanceChange()
+        // Picking pictures is how a user asks for them, so the first add
+        // selects them too; losing the last one falls back to the plain theme
+        // rather than leaving "My images" selected with nothing to show.
+        if (next.length > 0 && wallpaper !== 'custom') setWallpaper('custom')
+        if (next.length === 0 && wallpaper === 'custom') setWallpaper('none')
+      },
+      (error: unknown) => log.warn('failed to persist appearance', { error }),
+    )
   }
 
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => () => {
-    if (commitTimer.current !== null) clearTimeout(commitTimer.current)
-  }, [])
+  /** A clarity the preview already shows but the store has not been told. */
+  const pendingClarity = useRef<number | null>(null)
+  // Leaving the page inside the debounce must still save the value: the
+  // preview has already painted it, so a restart that quietly reverted it
+  // would read as a setting that did not stick.
+  useEffect(
+    () => () => {
+      if (commitTimer.current !== null) clearTimeout(commitTimer.current)
+      const pending = pendingClarity.current
+      if (pending === null) return
+      void update({ appearance: { wallpaperClarity: pending } }).then(
+        announceAppearanceChange,
+        (error: unknown) => log.warn('failed to persist clarity on leave', { error }),
+      )
+    },
+    [update],
+  )
 
   const handleClarityChange = (value: number): void => {
     const next = Math.min(1, Math.max(0, value / 100))
     draggingRef.current = true
+    pendingClarity.current = next
     setClarity(next)
     // Paint immediately: the watcher only re-reads on a persisted change, and
     // a slider that lags the pointer by a debounce feels broken.
@@ -402,6 +426,7 @@ export function AppearanceSettings() {
     if (commitTimer.current !== null) clearTimeout(commitTimer.current)
     commitTimer.current = setTimeout(() => {
       draggingRef.current = false
+      pendingClarity.current = null
       persist({ appearance: { wallpaperClarity: next } })
     }, CLARITY_COMMIT_MS)
   }

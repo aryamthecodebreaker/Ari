@@ -1209,9 +1209,21 @@ export function registerRpc(contents: WebContents, options: RegisterRpcOptions =
       : await dialog.showOpenDialog(options)
     if (result.canceled) return { paths: [] }
     // The dialog filter is a hint the user can defeat by typing a filename, so
-    // the extension is checked again: `wallpaper.read` only serves the types in
-    // this map, and a path that can never load has no business being saved.
-    return { paths: result.filePaths.filter((path) => wallpaperMimeType(path) !== null) }
+    // the type is checked again, and so is the size: `wallpaper.read` refuses
+    // anything over MAX_WALLPAPER_BYTES, and a path saved here that can never
+    // load would sit in the library as a blank background. The reader keeps
+    // its own checks for files that change after they were picked.
+    const accepted: string[] = []
+    for (const path of result.filePaths) {
+      if (wallpaperMimeType(path) === null) continue
+      try {
+        const info = await stat(path)
+        if (info.isFile() && info.size <= MAX_WALLPAPER_BYTES) accepted.push(path)
+      } catch {
+        // Gone between the dialog closing and now: nothing to save.
+      }
+    }
+    return { paths: accepted }
   })
 
   // Custom backgrounds live outside every project root, so the path jail does

@@ -294,12 +294,48 @@ describe('AppearanceSettings custom backgrounds', () => {
     // wait for it — the tint lands on <html> immediately.
     fireEvent.change(slider, { target: { value: '100' } })
     await waitFor(() => {
-      expect(document.documentElement.style.getPropertyValue('--ari-wallpaper-tint')).toBe('6%')
+      expect(document.documentElement.style.getPropertyValue('--ari-wallpaper-tint')).toBe('32%')
     })
     await waitFor(
       () =>
         expect(mocks.update).toHaveBeenCalledWith({ appearance: { wallpaperClarity: 1 } }),
       { timeout: 2000 },
     )
+  })
+
+  it('saves a clarity change even when the page closes inside the debounce', async () => {
+    const view = renderPage()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('radio', { name: /Anime City/ }))
+    const slider = await screen.findByRole('slider', { name: 'Background clarity' })
+
+    fireEvent.change(slider, { target: { value: '60' } })
+    // Leaving before the debounce fires used to cancel the only pending write,
+    // so the preview showed the value and a restart quietly reverted it.
+    view.unmount()
+
+    expect(mocks.update).toHaveBeenCalledWith({ appearance: { wallpaperClarity: 0.6 } })
+  })
+
+  it('finishes removing the last picture before dropping back to the plain theme', async () => {
+    await renderLibrary(['C:\\pics\\one.jpg'])
+    let release!: (value: Settings) => void
+    mocks.update.mockImplementationOnce(
+      () =>
+        new Promise<Settings>((resolve) => {
+          release = resolve
+        }),
+    )
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Remove one.jpg' }))
+    // While the library write is in flight the selection must not move: both
+    // go through one settings store, and a second write started alongside the
+    // first could overwrite it or fail its rename.
+    expect(document.documentElement.dataset['ariWallpaper']).toBe('custom')
+
+    release(engineSettings)
+    await waitFor(() => {
+      expect(document.documentElement.dataset['ariWallpaper']).toBeUndefined()
+    })
   })
 })
