@@ -49,6 +49,29 @@ describe('wallpaper.css', () => {
     expect(media).toContain('text-shadow: none')
   })
 
+  it('keeps the outline off text that already sits on a filled or opaque surface', () => {
+    // A theme-colored outline around a white label on an accent button looks
+    // dirty; the composer, inputs, popovers, cards and code have their own
+    // contrast. text-shadow inherits, so clearing it on the surface suffices.
+    const plain = css.replace(/\/\*[\s\S]*?\*\//g, '')
+    const start = plain.indexOf('.ari-glass-pane :is(')
+    expect(start).toBeGreaterThan(-1)
+    const rule = plain.slice(start, plain.indexOf('}', start))
+    for (const surface of [
+      '.text-fg-on-accent',
+      '.ari-composer-shell',
+      '.ari-glass-input',
+      '.ari-glass-overlay',
+      "[class*='bg-surface-']",
+      'input',
+      'textarea',
+      'code',
+    ]) {
+      expect(rule).toContain(surface)
+    }
+    expect(rule).toContain('text-shadow: none')
+  })
+
   it('neutralizes nested chrome and pane fills so no surface double-tints', () => {
     expect(css).toContain('[data-ari-wallpaper] .ari-glass-pane .ari-glass,')
     expect(css).toContain('[data-ari-wallpaper] .ari-glass-pane .bg-bg {')

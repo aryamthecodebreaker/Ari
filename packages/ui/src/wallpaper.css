@@ -119,6 +119,26 @@
   backdrop-filter: none;
 }
 
+/* The outline is for text sitting directly on the thinned plate. Text on a
+   filled or opaque surface already carries its own contrast, and a theme-colored
+   outline around a white label on an accent button reads as dirt, not clarity.
+   text-shadow inherits, so clearing it on the surface clears it for everything
+   inside: buttons and badges, the composer, inputs, popovers, surface cards and
+   code, whose monospace glyphs are too tight to outline cleanly. */
+[data-ari-wallpaper] .ari-glass-pane :is(
+    .text-fg-on-accent,
+    .ari-composer-shell,
+    .ari-glass-input,
+    .ari-glass-overlay,
+    [class*='bg-surface-'],
+    input,
+    textarea,
+    pre,
+    code
+  ) {
+  text-shadow: none;
+}
+
 /* Reduced transparency: keep the scene visible (it is an explicit opt-in) but
    drop the blur and raise the tint so contrast never depends on blur. */
 @media (prefers-reduced-transparency: reduce) {
